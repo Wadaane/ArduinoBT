@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/arduino"
+        android:title="Arduino" />
+    <item
+        android:id="@+id/matlab"
+        android:title="Matlab" />
+    <item
+        android:id="@+id/visual"
+        android:title="Visual" />
+    <item android:title="Processing">
+        <menu>
+            <item
+                android:id="@+id/processing_light"
+                android:title="Light" />
+            <item
+                android:id="@+id/processing_particles"
+                android:title="Particles" />
+            <item
+                android:id="@+id/processing_image"
+                android:title="Image" />
+        </menu>
+    </item>
+
+    <item android:title="Communicate">
+        <menu>
+            <item
+                android:id="@+id/nav_share"
+                android:icon="@android:drawable/ic_menu_share"
+                android:title="Share" />
+            <item
+                android:id="@+id/nav_send"
+                android:icon="@android:drawable/ic_menu_send"
+                android:title="Send" />
+        </menu>
+    </item>
+
+</menu>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/about"
+        android:title="About"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/btSpeedUp"
+        android:icon="@android:drawable/arrow_up_float"
+        android:title="Speed Up"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/btresetSpeed"
+        android:icon="@android:drawable/ic_popup_sync"
+        android:title="Reset Speed"
+        app:showAsAction="always" />
+</menu>
