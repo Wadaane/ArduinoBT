@@ -20,7 +20,7 @@ import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
-    // Tag used in log
+    // Tag used for logging
     static final String TAG = "MainActivity";
 
     @Override
