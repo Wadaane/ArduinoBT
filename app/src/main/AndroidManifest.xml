@@ -24,24 +24,26 @@
             android:parentActivityName=".Activity_SensorsList"
             android:windowSoftInputMode="stateAlwaysHidden" />
         <activity android:name=".MainActivity">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
         </activity>
         <activity
             android:name=".Activity_Processing"
             android:parentActivityName=".MainActivity"
             android:windowSoftInputMode="stateAlwaysHidden" />
+        <activity android:name=".Activity_Sketch" />
+        <activity
+            android:name=".ActivityRaspberryPi"
+            android:parentActivityName=".MainActivity"
+            android:theme="@style/AppTheme">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
 
         <service
             android:name=".Service_BT"
             android:enabled="true"
             android:exported="true" />
-
-        <activity android:name=".Activity_Sketch" />
-
     </application>
 
 </manifest>

@@ -24,9 +24,9 @@ import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.FrameLayout;
-import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.wadaane.appdev.arduinobt.Sketches.Sketch_Graph;
 import com.wadaane.appdev.arduinobt.Sketches.Sketch_Image;
@@ -52,7 +52,6 @@ import processing.android.PFragment;
 import processing.core.PApplet;
 
 public class Activity_Processing extends AppCompatActivity {
-//        implements NavigationView.OnNavigationItemSelectedListener {
 
     static final UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb");
     private static final CompositeDisposable disposables = new CompositeDisposable();
@@ -63,22 +62,21 @@ public class Activity_Processing extends AppCompatActivity {
         }
     };
     static float maxValue = 1;
+    static float distance = 0, angle = 0;
     static SeekBar seekBar;
     static EditText editText;
-    static float distance = 0, angle = 0;
     private static String TAG = "Processing Activity";
     private static String CHOICE = "";
     private static RxBluetooth bluetooth;
+    private static Context this_context;
     private static SharedPreferences preferences;
     private static BluetoothConnection bluetoothConnection;
-    //    DrawerLayout drawer;
     private static Observable<BluetoothSocket> connectObservable;
     private static DisposableObserver<BluetoothSocket> connectObserver;
     private static Consumer<String> readConsumer;
     private static Flowable<String> readFlowable;
     PApplet sketch;
     PFragment fragment;
-    LinearLayout layout;
     FloatingActionButton fab;
     private FrameLayout container;
 
@@ -178,7 +176,6 @@ public class Activity_Processing extends AppCompatActivity {
     }
 
     static Flowable<String> readObservable() {
-//        Log.e(TAG, "readObservable()");
         if (readFlowable == null)
             readFlowable = Flowable.defer(new Callable<Flowable<String>>() {
                 @Override
@@ -190,11 +187,11 @@ public class Activity_Processing extends AppCompatActivity {
     }
 
     static Consumer<String> readObserver() {
-//        Log.e(TAG, "readObserver()");
-        if (readConsumer == null)
+        if (readConsumer == null) {
             readConsumer = new Consumer<String>() {
                 @Override
                 public void accept(@NonNull String s) throws Exception {
+                    Toast.makeText(this_context, s, Toast.LENGTH_LONG).show();
                     if (s.startsWith("d")) {
                         distance = Integer.parseInt(s.substring(1));
                         if (Psender != null) {
@@ -204,16 +201,14 @@ public class Activity_Processing extends AppCompatActivity {
                         }
                     } else if (s.startsWith("a")) {
                         angle = Integer.parseInt(s.substring(1));
-//                        seekBar.setProgress((int) angle);
-//                        editText.setText(String.valueOf((int)angle));
 
                         if (Psender != null) {
                             Psender.obtainMessage(201, angle).sendToTarget();
                         }
                     }
-//                    Log.e(TAG, "accept()" + s);
                 }
             };
+        }
         return readConsumer;
     }
 
@@ -222,6 +217,7 @@ public class Activity_Processing extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         Log.e(TAG, "onCreate()");
         init(R.layout.content_processing);
+        this_context = this;
 
         CHOICE = getIntent().getExtras().getString("Sketch");
         preferences = getSharedPreferences("SETTINGS", MODE_PRIVATE);
@@ -235,28 +231,14 @@ public class Activity_Processing extends AppCompatActivity {
     void init(int id) {
         setContentView(id);
 
-//        layout = new LinearLayout(this);
-//        layout.setOrientation(LinearLayout.VERTICAL);
-//        LinearLayoutCompat.LayoutParams layoutParams = new LinearLayoutCompat.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-//        layout.setLayoutParams(layoutParams);
-
         container = (FrameLayout) findViewById(R.id.cont);
         seekBar = (SeekBar) findViewById(R.id.seekBar);
         editText = (EditText) findViewById(R.id.editTextAngle);
-//        setContentView(layout,layoutParams);
-//        FrameLayout.LayoutParams layoutParams2 = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-//        layoutParams2.setMargins(0,10,0,0);
-//        container = new FrameLayout(this);
-//        container.setId(R.id.sketch_cont);
-//        container.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
-//                ViewGroup.LayoutParams.MATCH_PARENT));
-//        container.setElevation(0);
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
         fab = (FloatingActionButton) findViewById(R.id.fab);
-//        drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
 
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -266,30 +248,14 @@ public class Activity_Processing extends AppCompatActivity {
                     bluetoothConnection.send("s#");
             }
         });
-//
-//        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-//                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-//        drawer.setDrawerListener(toggle);
-//        toggle.syncState();
-//        drawer.openDrawer(Gravity.START);
 
-//        container.setVisibility(View.INVISIBLE);
-//        fab.setVisibility(View.INVISIBLE);
-//        drawer.setVisibility(View.INVISIBLE);
         container.post(new Runnable() {
             @Override
             public void run() {
                 drawSketch(CHOICE);
-//                container.setVisibility(View.VISIBLE);
-//                fab.setVisibility(View.VISIBLE);
-//                drawer.setVisibility(View.VISIBLE);
             }
         });
         if (getSupportActionBar() != null) getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-//        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
-//        navigationView.setNavigationItemSelectedListener(this);
-//        ActionBar actionBar = getSupportActionBar();
-//        if (actionBar != null) actionBar.setDisplayHomeAsUpEnabled(true);
 
         final InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -322,12 +288,6 @@ public class Activity_Processing extends AppCompatActivity {
         });
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        Log.e(TAG, "onResume: ");
-    }
-
     private void startBTListening() {
         Log.e(TAG, "startBTListening()");
         disposables.clear();
@@ -341,13 +301,8 @@ public class Activity_Processing extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-//        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-//        if (drawer.isDrawerOpen(GravityCompat.START)) {
-//            drawer.closeDrawer(GravityCompat.START);
-//        } else {
         getSupportFragmentManager().beginTransaction().remove(fragment).commit();
         super.onBackPressed();
-//        }
     }
 
     @Override
@@ -367,15 +322,6 @@ public class Activity_Processing extends AppCompatActivity {
             bluetooth.disableBluetooth();
             connectObserver = null;
         }
-
-//        sketch = null;
-//        connectObservable = null;
-//        readFlowable = null;
-//        readConsumer = null;
-//        Preceiver = null;
-//        Psender = null;
-
-//        if (bluetooth.isBluetoothEnabled())bluetooth.disableBluetooth();
     }
 
     public void showDialog() {
@@ -398,19 +344,14 @@ public class Activity_Processing extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_processing, menu);
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
         switch (id) {
             case R.id.about:
                 showDialog();
@@ -435,9 +376,6 @@ public class Activity_Processing extends AppCompatActivity {
             maxValue = 1;
         } else {
             final Context context = this;
-//            container.post(new Runnable() {
-//                @Override
-//                public void run() {
             switch (choice) {
                 case "light":
                     sketch = new Sketch_Graph(container.getWidth(), container.getHeight(), Preceiver);
@@ -454,8 +392,6 @@ public class Activity_Processing extends AppCompatActivity {
             fragment = new PFragment(sketch);
             maxValue = 1;
             fragment.setView(container, (FragmentActivity) context);
-//                }
-//            });
         }
     }
 
@@ -463,54 +399,5 @@ public class Activity_Processing extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         startBTListening();
-        Log.e(TAG, "onActivityResult()");
     }
-
-    //    @SuppressWarnings("StatementWithEmptyBody")
-//    @Override
-//    public boolean onNavigationItemSelected(MenuItem item) {
-//        // Handle navigation view item clicks here.
-//        int id = item.getItemId();
-//        Intent starter;
-//        switch (id) {
-//            case R.id.arduino:
-//                starter = new Intent(this, Activity_SensorsList.class);
-//                start(starter);
-//                break;
-//
-//            case R.id.processing_image:
-//                starter = new Intent(this, Activity_Processing.class);
-//                starter.putExtra("Sketch", "image");
-//                start(starter);
-//                break;
-//            case R.id.processing_particles:
-//                starter = new Intent(this, Activity_Processing.class);
-//                starter.putExtra("Sketch", "particles");
-//                start(starter);
-//                break;
-//            case R.id.processing_light:
-//                starter = new Intent(this, Activity_Processing.class);
-//                starter.putExtra("Sketch", "light");
-//                start(starter);
-//                break;
-//            default:
-//                Toast.makeText(this, "Action not Set", Toast.LENGTH_SHORT).show();
-//        }
-//
-//        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-//        drawer.closeDrawer(GravityCompat.START);
-//        return true;
-//    }
-//    private void start(Intent starter) {
-////        starter.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-//        Pair<View, String> p1 = Pair.create(this.findViewById(R.id.app_bar), "appBar");
-//        Pair<View, String> p2 = Pair.create(this.findViewById(R.id.fab), "FAB");
-//        ActivityOptionsCompat options = ActivityOptionsCompat.makeSceneTransitionAnimation(this, p1, p2);
-////        ActivityOptionsCompat options = ActivityOptionsCompat.makeSceneTransitionAnimation(this,findViewById(R.id.fab),"FAB");
-//        getSupportFragmentManager().beginTransaction().remove(fragment).commit();
-//        startActivity(starter, options.toBundle());
-//        finish();
-////        supportFinishAfterTransition();
-////        startActivity(starter);
-//    }
 }
