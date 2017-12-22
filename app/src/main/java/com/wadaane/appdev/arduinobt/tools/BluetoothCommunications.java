@@ -87,6 +87,16 @@ public class BluetoothCommunications {
         return mObserveInputStream;
     }
 
+//    /**
+//     * Observes string from bluetooth's {@link InputStream} with '\r' (Carriage Return)
+//     * and '\n' (New Line) as delimiter.
+//     *
+//     * @return RxJava Observable with {@link String}
+//     */
+//    public Flowable<String> observeStringStream() {
+//        return observeStringStream('\r', '\n');
+//    }
+
     /**
      * Observes string from bluetooth's {@link InputStream}.
      *

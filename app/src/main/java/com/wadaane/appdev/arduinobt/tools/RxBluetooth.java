@@ -33,26 +33,32 @@ import io.reactivex.observers.DisposableObserver;
 import io.reactivex.schedulers.Schedulers;
 
 public class RxBluetooth {
-    public static final CompositeDisposable disposables = new CompositeDisposable();
-    private static final UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb");
-    public static RxCommunications bluetoothCommunications;
-    public static Observable<BluetoothSocket> connectObservable;
-    public static DisposableObserver<BluetoothSocket> connectObserver;
-    public static Flowable<String> readFlowable;
-    private static String TAG = "RxBluetooth";
-    private static Consumer<String> readConsumer;
+    public final CompositeDisposable disposables = new CompositeDisposable();
+    private final UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb");
+    public RxCommunications rxCommunications;
+    public Observable<BluetoothSocket> connectObservable;
+    public DisposableObserver<BluetoothSocket> connectObserver;
+    public Flowable<String> readFlowable;
+    private String TAG = "RxBluetooth";
+    private Consumer<String> readConsumer;
     private BluetoothAdapter mBluetoothAdapter;
+    private android.widget.TextView textview;
+
+    public RxBluetooth(Activity activity, int widget_id) {
+        this.mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        textview = activity.findViewById(widget_id);
+    }
 
     public RxBluetooth() {
         this.mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
     }
 
-    private static BluetoothSocket connect(String deviceName) {
+    private BluetoothSocket connect(String deviceName) {
         BluetoothDevice mmDevice;
         BluetoothSocket mmSocket;
-
         Set<BluetoothDevice> pairedDevices = BluetoothAdapter.getDefaultAdapter().getBondedDevices();
         BluetoothDevice device = null;
+
         if (pairedDevices.size() > 0) {
             for (BluetoothDevice bt : pairedDevices) {
                 if (bt.getName().equals(deviceName))
@@ -89,7 +95,7 @@ public class RxBluetooth {
         return mmSocket;
     }
 
-    private static Observable<BluetoothSocket> connectObservable(final String deviceName) {
+    private Observable<BluetoothSocket> connectObservable(final String deviceName) {
         if (connectObservable == null)
             connectObservable = Observable.defer(new Callable<Observable<BluetoothSocket>>() {
                 @Override
@@ -100,13 +106,13 @@ public class RxBluetooth {
         return connectObservable;
     }
 
-    private static DisposableObserver<BluetoothSocket> connectObserver() {
+    private DisposableObserver<BluetoothSocket> connectObserver() {
         if (connectObserver == null)
             connectObserver = new DisposableObserver<BluetoothSocket>() {
                 @Override
                 public void onNext(@NonNull BluetoothSocket con) {
                     try {
-                        bluetoothCommunications = new RxCommunications(con);
+                        rxCommunications = new RxCommunications(con);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -129,23 +135,25 @@ public class RxBluetooth {
         return connectObserver;
     }
 
-    private static Flowable<String> readObservable() {
+    private Flowable<String> readObservable() {
         if (readFlowable == null)
             readFlowable = Flowable.defer(new Callable<Flowable<String>>() {
                 @Override
                 public Flowable<String> call() throws Exception {
-                    return bluetoothCommunications.observeStringStream('#');
+                    return rxCommunications.observeStringStream();
                 }
             });
         return readFlowable;
     }
 
-    private static Consumer<String> readObserver() {
+    private Consumer<String> readObserver() {
         if (readConsumer == null) {
             readConsumer = new Consumer<String>() {
                 @Override
                 public void accept(@NonNull String s) throws Exception {
                     Log.e(TAG, s);
+                    if (textview != null) textview.setText(s);
+
                 }
             };
         }
@@ -154,7 +162,7 @@ public class RxBluetooth {
 
     public void startBTListening(String deviceName) {
         disposables.clear();
-        if (bluetoothCommunications == null)
+        if (rxCommunications == null)
             disposables.add(
                     connectObservable(deviceName)
                             .observeOn(AndroidSchedulers.mainThread())
@@ -163,30 +171,15 @@ public class RxBluetooth {
     }
 
     public void sendData(String data) {
-        if (bluetoothCommunications != null) {
-            bluetoothCommunications.send(data);
+        if (rxCommunications != null) {
+            rxCommunications.send(data);
         }
     }
 
-    /**
-     * Return true if Bluetooth is currently enabled and ready for use.
-     * <p>Equivalent to:
-     * <code>getBluetoothState() == STATE_ON</code>
-     * <p>Requires {@link android.Manifest.permission#BLUETOOTH}
-     *
-     * @return true if the local adapter is turned on
-     */
     public boolean isBluetoothEnabled() {
         return mBluetoothAdapter.isEnabled();
     }
 
-    /**
-     * This will issue a request to enable Bluetooth through the system settings (without stopping
-     * your application) via ACTION_REQUEST_ENABLE action Intent.
-     *
-     * @param activity    Activity
-     * @param requestCode request code
-     */
     public void enableBluetooth(Activity activity, int requestCode) {
         if (!mBluetoothAdapter.isEnabled()) {
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
@@ -199,29 +192,19 @@ public class RxBluetooth {
     }
 
     public void closeConnection() {
-        bluetoothCommunications.closeConnection();
+        rxCommunications.closeConnection();
     }
 }
 
 class RxCommunications {
 
-    private static final String TAG = RxCommunications.class.getName();
-
+    private final String TAG = "RxCommunications";
     private BluetoothSocket socket;
-
     private InputStream inputStream;
     private OutputStream outputStream;
-
     private Flowable<Byte> mObserveInputStream;
-
     private boolean connected = false;
 
-    /**
-     * Container for simplifying read and write from/to {@link BluetoothSocket}.
-     *
-     * @param socket bluetooth socket
-     * @throws Exception if can't get input/output stream from the socket
-     */
     RxCommunications(BluetoothSocket socket) throws Exception {
         if (socket == null) {
             throw new InvalidParameterException("Bluetooth socket can't be null");
@@ -243,11 +226,6 @@ class RxCommunications {
         }
     }
 
-    /**
-     * Observes byte from bluetooth's {@link InputStream}. Will be emitted per byte.
-     *
-     * @return RxJava Observable with {@link Byte}
-     */
     private Flowable<Byte> observeByteStream() {
         if (mObserveInputStream == null) {
             mObserveInputStream = Flowable.create(new FlowableOnSubscribe<Byte>() {
@@ -271,13 +249,11 @@ class RxCommunications {
         return mObserveInputStream;
     }
 
-    /**
-     * Observes string from bluetooth's {@link InputStream}.
-     *
-     * @param delimiter char(s) used for string delimiter
-     * @return RxJava Observable with {@link String}
-     */
-    Flowable<String> observeStringStream(final int... delimiter) {
+    Flowable<String> observeStringStream() {
+        return observeStringStream('\r', '\n');
+    }
+
+    private Flowable<String> observeStringStream(final int... delimiter) {
         return observeByteStream().lift(new FlowableOperator<String, Byte>() {
             @Override
             public Subscriber<? super Byte> apply(final Subscriber<? super String> subscriber) {
@@ -342,12 +318,6 @@ class RxCommunications {
         }).onBackpressureBuffer();
     }
 
-    /**
-     * Send array of bytes to bluetooth output stream.
-     *
-     * @param bytes data to send
-     * @return true if success, false if there was error occurred or disconnected
-     */
     private boolean send(byte[] bytes) {
         if (!connected) return false;
 
@@ -367,21 +337,12 @@ class RxCommunications {
         }
     }
 
-    /**
-     * Send string of text to bluetooth output stream.
-     *
-     * @param text text to send
-     * @return true if success, false if there was error occurred or disconnected
-     */
     boolean send(String text) {
         Log.e(TAG, "send: " + text);
         byte[] sBytes = text.getBytes();
         return send(sBytes);
     }
 
-    /**
-     * Close the streams and socket connection.
-     */
     void closeConnection() {
         try {
             connected = false;

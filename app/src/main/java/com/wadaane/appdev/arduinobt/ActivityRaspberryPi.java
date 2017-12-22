@@ -24,11 +24,11 @@ import io.reactivex.schedulers.Schedulers;
 
 public class ActivityRaspberryPi extends AppCompatActivity {
 
-    //    static String TAG = "ActivityRaspberryPi";
-    private static RxBluetooth bluetooth;
-    private static SharedPreferences preferences;
     EditText edit_send;
     Button bt_send;
+    //    static String TAG = "ActivityRaspberryPi";
+    private RxBluetooth bluetooth;
+    private SharedPreferences preferences;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,7 +70,7 @@ public class ActivityRaspberryPi extends AppCompatActivity {
             }
         });
 
-        bluetooth = new RxBluetooth();
+        bluetooth = new RxBluetooth(this, edit_send.getId());
         if (bluetooth.isBluetoothEnabled())
             bluetooth.startBTListening(preferences.getString("DEVICE", "0"));
         else bluetooth.enableBluetooth(this, 1);
@@ -82,17 +82,17 @@ public class ActivityRaspberryPi extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        RxBluetooth.disposables.clear();
-        if (RxBluetooth.connectObservable != null)
-            RxBluetooth.connectObservable.unsubscribeOn(Schedulers.computation());
-        if (RxBluetooth.readFlowable != null)
-            RxBluetooth.readFlowable.unsubscribeOn(Schedulers.io());
-        if (RxBluetooth.bluetoothCommunications != null) {
+        bluetooth.disposables.clear();
+        if (bluetooth.connectObservable != null)
+            bluetooth.connectObservable.unsubscribeOn(Schedulers.computation());
+        if (bluetooth.readFlowable != null)
+            bluetooth.readFlowable.unsubscribeOn(Schedulers.io());
+        if (bluetooth.rxCommunications != null) {
             bluetooth.closeConnection();
-            RxBluetooth.bluetoothCommunications = null;
+            bluetooth.rxCommunications = null;
         }
         bluetooth.disableBluetooth();
-        RxBluetooth.connectObserver = null;
+        bluetooth.connectObserver = null;
     }
 
     @Override
