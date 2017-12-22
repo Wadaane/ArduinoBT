@@ -32,7 +32,7 @@ import com.wadaane.appdev.arduinobt.Sketches.Sketch_Graph;
 import com.wadaane.appdev.arduinobt.Sketches.Sketch_Image;
 import com.wadaane.appdev.arduinobt.Sketches.Sketch_LightSensor;
 import com.wadaane.appdev.arduinobt.Sketches.Sketch_Particles;
-import com.wadaane.appdev.arduinobt.tools.BluetoothConnection;
+import com.wadaane.appdev.arduinobt.tools.BluetoothCommunications;
 import com.wadaane.appdev.arduinobt.tools.RxBluetooth;
 
 import java.io.IOException;
@@ -70,7 +70,7 @@ public class Activity_Processing extends AppCompatActivity {
     private static RxBluetooth bluetooth;
     private static Context this_context;
     private static SharedPreferences preferences;
-    private static BluetoothConnection bluetoothConnection;
+    private static BluetoothCommunications bluetoothCommunications;
     private static Observable<BluetoothSocket> connectObservable;
     private static DisposableObserver<BluetoothSocket> connectObserver;
     private static Consumer<String> readConsumer;
@@ -151,7 +151,7 @@ public class Activity_Processing extends AppCompatActivity {
                 @Override
                 public void onNext(@NonNull BluetoothSocket con) {
                     try {
-                        bluetoothConnection = new BluetoothConnection(con);
+                        bluetoothCommunications = new BluetoothCommunications(con);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -180,7 +180,7 @@ public class Activity_Processing extends AppCompatActivity {
             readFlowable = Flowable.defer(new Callable<Flowable<String>>() {
                 @Override
                 public Flowable<String> call() throws Exception {
-                    return bluetoothConnection.observeStringStream('#');
+                    return bluetoothCommunications.observeStringStream('#');
                 }
             });
         return readFlowable;
@@ -222,7 +222,7 @@ public class Activity_Processing extends AppCompatActivity {
         CHOICE = getIntent().getExtras().getString("Sketch");
         preferences = getSharedPreferences("SETTINGS", MODE_PRIVATE);
         if (CHOICE.equals("light")) {
-            bluetooth = new RxBluetooth(this);
+            bluetooth = new RxBluetooth();
             if (bluetooth.isBluetoothEnabled()) startBTListening();
             else bluetooth.enableBluetooth(this, 1);
         }
@@ -244,8 +244,8 @@ public class Activity_Processing extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 drawSketch(CHOICE);
-                if (bluetoothConnection != null)
-                    bluetoothConnection.send("s#");
+                if (bluetoothCommunications != null)
+                    bluetoothCommunications.send("s#");
             }
         });
 
@@ -262,7 +262,8 @@ public class Activity_Processing extends AppCompatActivity {
             @Override
             public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
                 editText.setText(String.valueOf(i));
-                if (bluetoothConnection != null) bluetoothConnection.send(String.valueOf(i));
+                if (bluetoothCommunications != null)
+                    bluetoothCommunications.send(String.valueOf(i));
             }
 
             @Override
@@ -279,7 +280,7 @@ public class Activity_Processing extends AppCompatActivity {
             public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
                 String a = editText.getText().toString();
                 Log.e(TAG, "onClick: " + a);
-                if (bluetoothConnection != null) bluetoothConnection.send(a);
+                if (bluetoothCommunications != null) bluetoothCommunications.send(a);
                 seekBar.setProgress(Integer.parseInt(a));
                 editText.setText("");
                 imm.hideSoftInputFromWindow(editText.getWindowToken(), 0);
@@ -291,7 +292,7 @@ public class Activity_Processing extends AppCompatActivity {
     private void startBTListening() {
         Log.e(TAG, "startBTListening()");
         disposables.clear();
-        if (bluetoothConnection == null)
+        if (bluetoothCommunications == null)
             disposables.add(
                     connectObservable()
                             .observeOn(AndroidSchedulers.mainThread())
@@ -315,9 +316,9 @@ public class Activity_Processing extends AppCompatActivity {
             if (connectObservable != null)
                 connectObservable.unsubscribeOn(Schedulers.computation());
             if (readFlowable != null) readFlowable.unsubscribeOn(Schedulers.io());
-            if (bluetoothConnection != null) {
-                bluetoothConnection.closeConnection();
-                bluetoothConnection = null;
+            if (bluetoothCommunications != null) {
+                bluetoothCommunications.closeConnection();
+                bluetoothCommunications = null;
             }
             bluetooth.disableBluetooth();
             connectObserver = null;
@@ -358,13 +359,13 @@ public class Activity_Processing extends AppCompatActivity {
                 break;
 
             case R.id.btSpeedUp:
-                if (bluetoothConnection != null)
-                    bluetoothConnection.send("u#");
+                if (bluetoothCommunications != null)
+                    bluetoothCommunications.send("u#");
                 break;
 
             case R.id.btresetSpeed:
-                if (bluetoothConnection != null)
-                    bluetoothConnection.send("r#");
+                if (bluetoothCommunications != null)
+                    bluetoothCommunications.send("r#");
                 break;
         }
 

@@ -19,9 +19,9 @@ import io.reactivex.FlowableEmitter;
 import io.reactivex.FlowableOnSubscribe;
 import io.reactivex.FlowableOperator;
 
-public class BluetoothConnection {
+public class BluetoothCommunications {
 
-    private static final String TAG = BluetoothConnection.class.getName();
+    private static final String TAG = BluetoothCommunications.class.getName();
 
     private BluetoothSocket socket;
 
@@ -38,7 +38,7 @@ public class BluetoothConnection {
      * @param socket bluetooth socket
      * @throws Exception if can't get input/output stream from the socket
      */
-    public BluetoothConnection(BluetoothSocket socket) throws Exception {
+    public BluetoothCommunications(BluetoothSocket socket) throws Exception {
         if (socket == null) {
             throw new InvalidParameterException("Bluetooth socket can't be null");
         }
@@ -64,7 +64,7 @@ public class BluetoothConnection {
      *
      * @return RxJava Observable with {@link Byte}
      */
-    public Flowable<Byte> observeByteStream() {
+    private Flowable<Byte> observeByteStream() {
         if (mObserveInputStream == null) {
             mObserveInputStream = Flowable.create(new FlowableOnSubscribe<Byte>() {
                 @Override
@@ -85,16 +85,6 @@ public class BluetoothConnection {
         }
 
         return mObserveInputStream;
-    }
-
-    /**
-     * Observes string from bluetooth's {@link InputStream} with '\r' (Carriage Return)
-     * and '\n' (New Line) as delimiter.
-     *
-     * @return RxJava Observable with {@link String}
-     */
-    public Flowable<String> observeStringStream() {
-        return observeStringStream('\r', '\n');
     }
 
     /**
@@ -169,22 +159,12 @@ public class BluetoothConnection {
     }
 
     /**
-     * Send one byte to bluetooth output stream.
-     *
-     * @param oneByte a byte
-     * @return true if success, false if there was error occurred or disconnected
-     */
-    public boolean send(byte oneByte) {
-        return send(new byte[]{oneByte});
-    }
-
-    /**
      * Send array of bytes to bluetooth output stream.
      *
      * @param bytes data to send
      * @return true if success, false if there was error occurred or disconnected
      */
-    public boolean send(byte[] bytes) {
+    private boolean send(byte[] bytes) {
         if (!connected) return false;
 
         try {
